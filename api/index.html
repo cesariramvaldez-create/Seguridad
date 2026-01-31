@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Tablón de Seguridad</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 600px; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        h1 { color: #1c1e21; }
+        input, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; background-color: #007bff; color: white; border: none; padding: 12px; border-radius: 6px; font-size: 16px; cursor: pointer; transition: background 0.3s; }
+        button:hover { background-color: #0056b3; }
+        .post { background: white; padding: 15px; border-radius: 8px; border-left: 5px solid #007bff; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .post h3 { margin-top: 0; color: #333; }
+        .post p { color: #555; line-height: 1.5; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🛡️ Mis Posts de Seguridad</h1>
+        
+        <div class="card">
+            <input type="text" id="titulo" placeholder="Título del post...">
+            <textarea id="contenido" rows="3" placeholder="¿Qué está pasando?"></textarea>
+            <button onclick="enviarPost()">Publicar Ahora</button>
+        </div>
+
+        <div id="lista-posts">
+            <p style="text-align: center;">Cargando novedades...</p>
+        </div>
+    </div>
+
+    <script>
+        // Detecta automáticamente si está en local o en Vercel
+        const API_URL = window.location.origin;
+
+        async function cargarPosts() {
+            try {
+                const res = await fetch(`${API_URL}/api/posts`);
+                const posts = await res.json();
+                const contenedor = document.getElementById('lista-posts');
+                
+                if (posts.length === 0) {
+                    contenedor.innerHTML = "<p>Aún no hay posts. ¡Sé el primero!</p>";
+                    return;
+                }
+
+                contenedor.innerHTML = posts.map(p => `
+                    <div class="post">
+                        <h3>${p.titulo}</h3>
+                        <p>${p.contenido}</p>
+                    </div>
+                `).reverse().join(''); // El más nuevo arriba
+            } catch (error) {
+                console.error("Error al cargar:", error);
+            }
+        }
+
+        async function enviarPost() {
+            const t = document.getElementById('titulo').value;
+            const c = document.getElementById('contenido').value;
+
+            if (!t || !c) return alert("Por favor, llena ambos campos");
+
+            const btn = document.querySelector('button');
+            btn.disabled = true;
+            btn.innerText = "Enviando...";
+
+            try {
+                // Enviamos los datos como parámetros de consulta (query params)
+                await fetch(`${API_URL}/api/crear-post?titulo=${encodeURIComponent(t)}&contenido=${encodeURIComponent(c)}`, {
+                    method: 'POST'
+                });
+
+                document.getElementById('titulo').value = '';
+                document.getElementById('contenido').value = '';
+                cargarPosts();
+            } catch (error) {
+                alert("Error al publicar");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Publicar Ahora";
+            }
+        }
+
+        // Cargar posts al abrir la página
+        cargarPosts();
+    </script>
+</body>
+</html>
